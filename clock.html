@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horloge & Timer Pro</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f4;
+            --clock-face: #ffffff;
+            --hands-color: #333;
+            --swiss-red: #d5001c;
+            --dial-color: #000;
+            --dialog-bg: #ffffff;
+            --text-color: #000;
+            --progress-bg: #ddd;
+            /* La variable sera mise à jour par JS selon l'affichage des secondes */
+            --digital-font-size: 15vw; 
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --clock-face: #2c2c2c;
+            --hands-color: #e0e0e0;
+            --dial-color: #ffffff;
+            --dialog-bg: #333;
+            --text-color: #ffffff;
+            --progress-bg: #444;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Arial', Helvetica, sans-serif;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        .idle-cursor-hidden { cursor: none !important; }
+
+        #settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            z-index: 10;
+            background: none;
+            border: none;
+            opacity: 0.5;
+            transition: opacity 0.5s;
+            color: var(--hands-color);
+        }
+        #settings-btn:hover { opacity: 1; }
+        
+        .idle-hidden {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+
+        #main-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2vmin;
+            max-height: 95vh;
+            width: 100%;
+        }
+
+        #clock-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #analog-clock {
+            width: 70vmin;
+            aspect-ratio: 1 / 1;
+            border-radius: 50%;
+            background: var(--clock-face);
+            border: 1.8vmin solid var(--hands-color);
+            position: relative;
+            box-shadow: 0 1vmin 3vmin rgba(0,0,0,0.1);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .tick {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0.6%;
+            height: 2.5%;
+            background: var(--dial-color);
+            transform-origin: center;
+        }
+        
+        .tick.hour-tick { width: 1.8%; height: 8%; }
+
+        .number {
+            position: absolute;
+            font-size: 5vmin;
+            font-weight: bold;
+            color: var(--dial-color);
+            transform: translate(-50%, -50%);
+        }
+
+        .hand {
+            position: absolute;
+            left: 50%;
+            bottom: 50%;
+            transform-origin: bottom center;
+            background: var(--hands-color);
+            border-radius: 1vmin;
+        }
+
+        .hour-hand { width: 3.5%; height: 30%; z-index: 3; }
+        .min-hand { width: 2.5%; height: 48%; z-index: 4; }
+        
+        .hour-hand::before, .min-hand::before {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: var(--hands-color);
+        }
+        .hour-hand::before { height: 30%; border-radius: 0 0 1vmin 1vmin; }
+        .min-hand::before { height: 20%; border-radius: 0 0 1vmin 1vmin; }
+        
+        .second-hand {
+            width: 1.2%;
+            height: 38%;
+            background: var(--swiss-red);
+            z-index: 5;
+            border-radius: 1vmin 1vmin 0 0;
+            transform-origin: bottom center;
+            transform: translateX(-50%);
+        }
+        
+        .second-hand::before {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            height: 30%;
+            background: var(--swiss-red);
+            border-radius: 0 0 1vmin 1vmin;
+        }
+
+        .second-hand::after {
+            content: '';
+            position: absolute;
+            top: -2.5vmin;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4.5vmin;
+            height: 4.5vmin;
+            background: var(--swiss-red);
+            border-radius: 50%;
+        }
+
+        #center-cap {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 2.5vmin;
+            height: 2.5vmin;
+            background: var(--swiss-red);
+            border-radius: 50%;
+            z-index: 6;
+        }
+
+        #digital-clock {
+            font-size: var(--digital-font-size);
+            font-weight: bold;
+            color: var(--hands-color);
+            display: none;
+            white-space: nowrap;
+            line-height: 1;
+        }
+
+        #timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        #timer-display {
+            font-size: 7vmin;
+            font-family: monospace;
+            font-weight: bold;
+            color: var(--hands-color);
+        }
+
+        #timer-display.overtime { color: var(--swiss-red) !important; }
+
+        #progress-container {
+            width: 60vmin;
+            height: 1.5vmin;
+            background: var(--progress-bg);
+            border-radius: 1vmin;
+            margin: 1.5vmin 0;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(128,128,128,0.2);
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 100%;
+            background: var(--swiss-red);
+            transition: width 1s linear;
+        }
+
+        #hour-marker {
+            position: absolute;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--hands-color);
+            z-index: 2;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .timer-btn {
+            background: var(--hands-color);
+            color: var(--clock-face);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 2vmin;
+            min-width: 90px;
+        }
+
+        dialog {
+            border: none;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            width: 340px;
+            background: var(--dialog-bg);
+            color: var(--text-color);
+        }
+
+        dialog::backdrop { background: rgba(0,0,0,0.5); }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <button id="settings-btn">⚙️</button>
+
+    <div id="main-wrapper">
+        <div id="clock-container">
+            <div id="analog-clock">
+                <div class="hand hour-hand" id="hour"></div>
+                <div class="hand min-hand" id="min"></div>
+                <div class="hand second-hand" id="sec"></div>
+                <div id="center-cap"></div>
+            </div>
+            <div id="digital-clock">
+                <span id="d-h">00</span><span class="d-sep">:</span><span id="d-m">00</span><span id="d-s-group"><span class="d-sep">:</span><span id="d-s">00</span></span>
+            </div>
+        </div>
+
+        <div id="timer-container" class="hidden">
+            <div id="timer-display">00:00:00</div>
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+                <div id="hour-marker"></div>
+            </div>
+            <div class="timer-controls" id="timer-ui">
+                <button class="timer-btn" id="timer-toggle">START</button>
+                <button class="timer-btn" id="timer-reset">RESET</button>
+            </div>
+        </div>
+    </div>
+
+    <dialog id="settings-dialog">
+        <h3>Configuration</h3>
+        
+        <div class="form-group">
+            <label>Type d'horloge :</label>
+            <select id="clock-type">
+                <option value="analog">Aiguilles</option>
+                <option value="digital">Numérique</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label><input type="checkbox" id="show-seconds" checked> Secondes</label>
+            <label id="show-numbers-group"><input type="checkbox" id="show-numbers"> Chiffres</label>
+        </div>
+
+        <hr>
+
+        <div class="form-group">
+            <label><input type="checkbox" id="show-timer"> Activer le Timer</label>
+            <label id="show-progress-group"><input type="checkbox" id="show-progress" checked> Barre de progression</label>
+        </div>
+
+        <div class="form-group">
+            <label>Durée :</label>
+            <div style="display:flex; gap:5px; align-items:center;">
+                <input type="number" id="timer-hours-input" min="0" max="99" value="0" style="width:50px"> h
+                <input type="number" id="timer-minutes-input" min="0" max="59" value="5" style="width:50px"> m
+            </div>
+        </div>
+
+        <div class="form-group" id="marker-group">
+            <label>Position de la barre blanche (0h 0m = masquée) :</label>
+            <div style="display:flex; gap:5px; align-items:center;">
+                <input type="number" id="marker-hours-input" min="0" max="99" value="1" style="width:50px"> h
+                <input type="number" id="marker-minutes-input" min="0" max="59" value="0" style="width:50px"> m
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Thème :</label>
+            <select id="theme-select">
+                <option value="dark" selected>Sombre</option>
+                <option value="light">Clair</option>
+            </select>
+        </div>
+
+        <p style="font-size:0.75em; opacity:0.6; text-align:center;">olivier bosch © 2006 - aucune donnée collectée</p>
+
+        <button id="copy-url" style="width:100%; padding:10px; margin-bottom:5px; cursor:pointer">Copier le lien</button>
+        <button id="close-dialog" style="width:100%; padding:10px; background:var(--swiss-red); color:white; border:none; cursor:pointer">Fermer</button>
+    </dialog>
+
+    <script>
+        const hourHand = document.getElementById('hour'), minHand = document.getElementById('min'), secHand = document.getElementById('sec');
+        const digitalClock = document.getElementById('digital-clock'), analogClock = document.getElementById('analog-clock');
+        const dialog = document.getElementById('settings-dialog'), themeSelect = document.getElementById('theme-select');
+        const clockTypeSelect = document.getElementById('clock-type'), showSecondsCheck = document.getElementById('show-seconds');
+        const showNumbersCheck = document.getElementById('show-numbers'), showTimerCheck = document.getElementById('show-timer');
+        const showProgressCheck = document.getElementById('show-progress'), timerHoursInput = document.getElementById('timer-hours-input');
+        const timerMinutesInput = document.getElementById('timer-minutes-input'), settingsBtn = document.getElementById('settings-btn');
+        const timerContainer = document.getElementById('timer-container'), timerUI = document.getElementById('timer-ui');
+        const timerToggleBtn = document.getElementById('timer-toggle'), timerDisplay = document.getElementById('timer-display');
+        const progressBar = document.getElementById('progress-bar'), hourMarker = document.getElementById('hour-marker'), progressContainer = document.getElementById('progress-container');
+        const markerHoursInput = document.getElementById('marker-hours-input'), markerMinutesInput = document.getElementById('marker-minutes-input');
+
+        const dH = document.getElementById('d-h'), dM = document.getElementById('d-m'), dS = document.getElementById('d-s'), dSGroup = document.getElementById('d-s-group');
+
+        let timeLeft = 0, totalInitialTime = 0, timerInterval = null, idleTimer, timeOffset = 0;
+
+        async function syncTime() {
+            try {
+                const response = await fetch('https://worldtimeapi.org/api/ip');
+                const data = await response.json();
+                timeOffset = new Date(data.datetime).getTime() - Date.now();
+            } catch (err) { console.warn("Sync error."); }
+        }
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            params.set('type', clockTypeSelect.value);
+            params.set('sec', showSecondsCheck.checked ? '1' : '0');
+            params.set('num', showNumbersCheck.checked ? '1' : '0');
+            params.set('timer', showTimerCheck.checked ? '1' : '0');
+            params.set('pb', showProgressCheck.checked ? '1' : '0');
+            params.set('th', themeSelect.value);
+            params.set('h', timerHoursInput.value);
+            params.set('m', timerMinutesInput.value);
+            params.set('mh', markerHoursInput.value);
+            params.set('mm', markerMinutesInput.value);
+            window.history.replaceState({}, '', `?${params.toString()}`);
+        }
+
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            if(params.has('type')) clockTypeSelect.value = params.get('type');
+            if(params.has('sec')) showSecondsCheck.checked = params.get('sec') === '1';
+            if(params.has('num')) showNumbersCheck.checked = params.get('num') === '1';
+            if(params.has('timer')) showTimerCheck.checked = params.get('timer') === '1';
+            if(params.has('pb')) showProgressCheck.checked = params.get('pb') === '1';
+            if(params.has('th')) {
+                themeSelect.value = params.get('th');
+                document.documentElement.setAttribute('data-theme', themeSelect.value);
+            }
+            if(params.has('h')) timerHoursInput.value = params.get('h');
+            if(params.has('m')) timerMinutesInput.value = params.get('m');
+            if(params.has('mh')) markerHoursInput.value = params.get('mh');
+            if(params.has('mm')) markerMinutesInput.value = params.get('mm');
+        }
+
+        function createClockFace() {
+            for (let i = 0; i < 60; i++) {
+                const tick = document.createElement('div');
+                tick.className = i % 5 === 0 ? 'tick hour-tick' : 'tick';
+                tick.style.transform = `translate(-50%, -50%) rotate(${i * 6}deg) translateY(${i % 5 === 0 ? '-31vmin' : '-33vmin'})`;
+                analogClock.appendChild(tick);
+            }
+            for (let i = 1; i <= 12; i++) {
+                const num = document.createElement('div');
+                num.className = 'number';
+                num.textContent = i;
+                const angle = (i * 30 - 90) * (Math.PI / 180);
+                num.style.left = `${50 + 35 * Math.cos(angle)}%`;
+                num.style.top = `${50 + 35 * Math.sin(angle)}%`;
+                analogClock.appendChild(num);
+            }
+        }
+
+        function updateClock() {
+            const now = new Date(Date.now() + timeOffset);
+            const ms = now.getMilliseconds(), seconds = now.getSeconds(), minutes = now.getMinutes(), hours = now.getHours();
+            const secDeg = (seconds * 1000 + ms < 58500) ? ((seconds * 1000 + ms) / 58500) * 360 : 360;
+            
+            secHand.style.transform = `translateX(-50%) rotate(${secDeg}deg)`;
+            minHand.style.transform = `translateX(-50%) rotate(${minutes * 6}deg)`;
+            hourHand.style.transform = `translateX(-50%) rotate(${(hours % 12 * 30) + (minutes / 60) * 30}deg)`;
+
+            dH.textContent = hours.toString().padStart(2, '0');
+            dM.textContent = minutes.toString().padStart(2, '0');
+            dS.textContent = seconds.toString().padStart(2, '0');
+
+            digitalClock.querySelectorAll('.d-sep').forEach(s => s.style.opacity = (showSecondsCheck.checked && seconds % 2 !== 0) ? "0" : "1");
+            dSGroup.classList.toggle('hidden', !showSecondsCheck.checked);
+            requestAnimationFrame(updateClock);
+        }
+
+        function initTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            timerDisplay.classList.remove('overtime');
+            totalInitialTime = (parseInt(timerHoursInput.value || 0) * 3600) + (parseInt(timerMinutesInput.value || 0) * 60);
+            timeLeft = totalInitialTime;
+            
+            const markerSec = (parseInt(markerHoursInput.value || 0) * 3600) + (parseInt(markerMinutesInput.value || 0) * 60);
+            if (markerSec > 0 && totalInitialTime > markerSec) {
+                hourMarker.classList.remove('hidden');
+                hourMarker.style.left = ((totalInitialTime - markerSec) / totalInitialTime * 100) + "%";
+            } else {
+                hourMarker.classList.add('hidden');
+            }
+
+            updateTimerUI();
+            timerToggleBtn.textContent = "START";
+            updateURL();
+        }
+
+        function updateTimerUI() {
+            const absSec = Math.abs(timeLeft);
+            const h = Math.floor(absSec / 3600), m = Math.floor((absSec % 3600) / 60), s = absSec % 60;
+            const minCeil = Math.ceil(absSec / 60);
+            timerDisplay.textContent = `${Math.floor(minCeil/60).toString().padStart(2, '0')}:${(minCeil%60).toString().padStart(2, '0')}`;
+            
+            if (timeLeft >= 0 && totalInitialTime > 0) {
+                progressBar.style.width = (timeLeft / totalInitialTime * 100) + "%";
+            } else {
+                progressBar.style.width = "0%";
+            }
+        }
+
+        timerToggleBtn.onclick = () => {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                timerToggleBtn.textContent = "START";
+            } else {
+                timerToggleBtn.textContent = "PAUSE";
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft < 0) timerDisplay.classList.add('overtime');
+                    updateTimerUI();
+                }, 1000);
+            }
+        };
+
+        document.getElementById('timer-reset').onclick = initTimer;
+
+        function applySettings() {
+            const isDigital = clockTypeSelect.value === 'digital';
+            analogClock.classList.toggle('hidden', isDigital);
+            digitalClock.style.display = isDigital ? 'block' : 'none';
+            document.getElementById('show-numbers-group').style.display = !isDigital ? 'inline-block' : 'none';
+            const vwRatio = showSecondsCheck.checked ? 20 : 35;
+            document.documentElement.style.setProperty('--digital-font-size', `min(${vwRatio}vw, 60vh)`);
+
+            timerContainer.classList.toggle('hidden', !showTimerCheck.checked);
+            progressContainer.classList.toggle('hidden', !showProgressCheck.checked);
+            secHand.classList.toggle('hidden', !showSecondsCheck.checked);
+            document.querySelectorAll('.number').forEach(n => n.classList.toggle('hidden', !showNumbersCheck.checked));
+            
+            updateTimerUI();
+            updateURL();
+        }
+
+        function resetIdleTimer() {
+            [settingsBtn, timerUI].forEach(el => el.classList.remove('idle-hidden'));
+            document.body.classList.remove('idle-cursor-hidden');
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                if (!dialog.open) {
+                    [settingsBtn, timerUI].forEach(el => el.classList.add('idle-hidden'));
+                    document.body.classList.add('idle-cursor-hidden');
+                }
+            }, 3000);
+        }
+
+        ['mousemove', 'mousedown', 'touchstart'].forEach(e => document.addEventListener(e, resetIdleTimer));
+
+        loadFromURL();
+        createClockFace();
+        applySettings();
+        initTimer();
+        syncTime().then(() => requestAnimationFrame(updateClock));
+
+        settingsBtn.onclick = () => dialog.showModal();
+        document.getElementById('close-dialog').onclick = () => { dialog.close(); resetIdleTimer(); };
+        themeSelect.onchange = () => { document.documentElement.setAttribute('data-theme', themeSelect.value); updateURL(); };
+        document.getElementById('copy-url').onclick = () => {
+            navigator.clipboard.writeText(window.location.href);
+            const b = document.getElementById('copy-url'); b.textContent = "Copié !";
+            setTimeout(() => b.textContent = "Copier le lien", 2000);
+        };
+
+        [clockTypeSelect, showSecondsCheck, showNumbersCheck, showTimerCheck, showProgressCheck].forEach(el => el.onchange = applySettings);
+        [timerHoursInput, timerMinutesInput, markerHoursInput, markerMinutesInput].forEach(el => el.onchange = initTimer);
+    </script>
+</body>
+</html>
