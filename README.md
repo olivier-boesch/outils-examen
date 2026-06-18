@@ -1,5 +1,7 @@
 # ⏱ Minuteurs & Horloge — Outils de salle de classe
 
+*[English version below](#-timers--clock--classroom-tools)*
+
 Deux pages web autonomes, sans installation, sans connexion requise, sans aucune donnée collectée.  
 Copiables sur une clé USB, ouvrables directement dans un navigateur.
 
@@ -71,6 +73,88 @@ L'état des minuteurs est stocké uniquement dans l'URL de la page, sur votre ma
 
 Ce projet est distribué sous licence **MIT** — vous êtes libre de l'utiliser, le modifier et le redistribuer, y compris à des fins commerciales, sous réserve de conserver la mention de copyright.  
 Voir le fichier [LICENSE](LICENSE) pour le texte complet.
+
+---
+
+*Olivier Boesch © 2026*
+
+---
+
+# ⏱ Timers & Clock — Classroom Tools
+
+*[Version française en haut](#️-minuteurs--horloge--outils-de-salle-de-classe)*
+
+Two standalone web pages — no installation, no internet connection required, no data collected.  
+Copy them to a USB drive and open directly in any browser.
+
+---
+
+## 📄 The two tools
+
+### `index.html` — Timer Manager
+**Live at: [timer.mesoraux.fr](http://timer.mesoraux.fr)**
+
+Displays as many timers as needed on a classroom-readable grid.  
+Designed to track multiple students simultaneously during exams or oral assessments.
+
+**Features:**
+- Add timers on the fly with the student's name
+- Auto-starts on add
+- Blinking red display and negative time when a timer expires
+- Subtle sound at zero (can be disabled)
+- Light / dark theme
+- Configurable default duration
+- **State saved in the URL** — the page can be reloaded or shared without losing active timers
+- Current time displayed prominently at the top (synced over the internet when available)
+- Works fully offline
+
+---
+
+### `clock.html` — Classroom Clock & Timer
+**Live at: [clock.mesoraux.fr](http://clock.mesoraux.fr)**
+
+A fullscreen clock — analog or digital — with a countdown timer and a progress bar.  
+Ideal for projecting at the front of the room during an exam.
+
+**Features:**
+- Analog (Swiss style) or digital clock
+- Seconds can be shown or hidden
+- Timer with progress bar
+- Positionable reference marker (e.g. to mark the end of the first hour)
+- Light / dark theme
+- UI auto-hides after 3 seconds of inactivity
+- All settings encoded in the URL — shareable as a single link
+- Works fully offline
+
+---
+
+## 🚀 Usage
+
+### Online
+Simply open the URL in a browser:
+- [timer.mesoraux.fr](http://timer.mesoraux.fr)
+- [clock.mesoraux.fr](http://clock.mesoraux.fr)
+
+### On a USB drive / locally
+Copy `index.html` and/or `clock.html` to the drive.  
+Double-click the file — it opens directly in the browser, no server, no installation needed.
+
+> The time will be taken from the PC's clock if no internet connection is available.
+
+---
+
+## 🔒 Privacy
+
+These tools are **100% client-side**.  
+No data is transmitted, stored, or collected.  
+Timer state is stored only in the page URL, on your own machine.
+
+---
+
+## 📜 License
+
+This project is released under the **MIT License** — you are free to use, modify, and redistribute it, including for commercial purposes, provided the copyright notice is retained.  
+See the [LICENSE](LICENSE) file for the full text.
 
 ---
 
