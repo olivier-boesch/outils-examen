@@ -367,6 +367,7 @@
         const dH = document.getElementById('d-h'), dM = document.getElementById('d-m'), dS = document.getElementById('d-s'), dSGroup = document.getElementById('d-s-group');
 
         let timeLeft = 0, totalInitialTime = 0, timerInterval = null, idleTimer, timeOffset = 0;
+        let savedTimeLeft = null, savedRunning = false;
 
         async function syncTime() {
             try {
@@ -388,6 +389,8 @@
             params.set('m', timerMinutesInput.value);
             params.set('mh', markerHoursInput.value);
             params.set('mm', markerMinutesInput.value);
+            params.set('tl', timeLeft);
+            params.set('run', timerInterval ? '1' : '0');
             window.history.replaceState({}, '', `?${params.toString()}`);
         }
 
@@ -406,6 +409,8 @@
             if(params.has('m')) timerMinutesInput.value = params.get('m');
             if(params.has('mh')) markerHoursInput.value = params.get('mh');
             if(params.has('mm')) markerMinutesInput.value = params.get('mm');
+            if(params.has('tl')) savedTimeLeft = parseInt(params.get('tl'));
+            if(params.has('run')) savedRunning = params.get('run') === '1';
         }
 
         function createClockFace() {
@@ -482,12 +487,14 @@
                 clearInterval(timerInterval);
                 timerInterval = null;
                 timerToggleBtn.textContent = "START";
+                updateURL();
             } else {
                 timerToggleBtn.textContent = "PAUSE";
                 timerInterval = setInterval(() => {
                     timeLeft--;
                     if (timeLeft < 0) timerDisplay.classList.add('overtime');
                     updateTimerUI();
+                    updateURL();
                 }, 1000);
             }
         };
@@ -529,6 +536,12 @@
         createClockFace();
         applySettings();
         initTimer();
+        if (savedTimeLeft !== null) {
+            timeLeft = savedTimeLeft;
+            if (timeLeft < 0) timerDisplay.classList.add('overtime');
+            updateTimerUI();
+            if (savedRunning) timerToggleBtn.click();
+        }
         syncTime().then(() => requestAnimationFrame(updateClock));
 
         settingsBtn.onclick = () => dialog.showModal();
