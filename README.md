@@ -67,4 +67,11 @@ L'état des minuteurs est stocké uniquement dans l'URL de la page, sur votre ma
 
 ---
 
+## 📜 Licence
+
+Ce projet est distribué sous licence **MIT** — vous êtes libre de l'utiliser, le modifier et le redistribuer, y compris à des fins commerciales, sous réserve de conserver la mention de copyright.  
+Voir le fichier [LICENSE](LICENSE) pour le texte complet.
+
+---
+
 *Olivier Boesch © 2026*
